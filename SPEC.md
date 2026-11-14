@@ -80,17 +80,18 @@ the primary source could only be reached through quotation, that is said.
 
 | Scheme | Rule | Check | Source |
 |---|---|---|---|
-| `in_aadhaar` | 12 digits; first digit 2-9; Verhoeff check digit | checksum | UIDAI, *A UID Numbering Scheme* (May 2010): 12 digits, 11 plus a Verhoeff check digit; first digit 1 reserved for entities. Read only through quotation ([commentary](https://susam.net/uid-numbering-scheme.html), which links the [archived original](http://web.archive.org/web/20100704211109/www.uidai.gov.in/documents/A_UID_Numbering_Scheme.pdf)). That the first digit is never 0 was not found in a UIDAI text; it is stated by [Microsoft Purview](https://learn.microsoft.com/en-us/purview/sit-defn-india-unique-identification-number) (read) and Presidio (read). Verified against UIDAI's published [test UIDs](https://uidai.gov.in/en/916-developer-section/data-and-downloads-section/11350-testing-data-and-license-keys.html): all six pass. |
+| `in_aadhaar` | 12 digits; first digit 2-9; Verhoeff check digit | checksum | UIDAI, *A UID Numbering Scheme* (May 2010): 12 digits, 11 plus a Verhoeff check digit; first digit 1 reserved for entities. Read only through quotation ([commentary](https://susam.net/uid-numbering-scheme.html), which links the [archived original](http://web.archive.org/web/20100704211109/www.uidai.gov.in/documents/A_UID_Numbering_Scheme.pdf)). That the first digit is never 0 was not found in a UIDAI text; it is stated by [Microsoft Purview](https://learn.microsoft.com/en-us/purview/sit-defn-india-unique-identification-number) (read) and Presidio (read). Checked against six test UIDs from UIDAI's developer pages ([testing data](https://uidai.gov.in/en/916-developer-section/data-and-downloads-section/11350-testing-data-and-license-keys.html)): all six pass, where a wrong table would pass each with probability 1/10. The UIDAI host refused connections; `999941057058` was seen in a search-engine excerpt of that page and the other five are as commonly reproduced from it. Presidio also rejects palindromes; with no source for that rule, it is not adopted. |
 | `in_pan` | 10 characters `AAAAA9999A`; fourth character one of A, B, C, F, G, H, J, L, P, T | format | Income Tax Department tutorial, [*Permanent Account Number*](https://incometaxindia.gov.in/tutorials/1.permanent%20account%20number%20(pan).pdf): fourth character is the holder's status. The site refused the download; the list was read from a search-engine summary of that PDF and agrees with Presidio. The tenth character is an alphabetic check digit whose algorithm is not published, so it is not verified. |
 | `in_gstin` | 15 characters: state code 01-38 or 97; a PAN (rule above); entity number 1-9 or A-Z; one of Z, C, D; check character | checksum | Structure: GST registration material, read only through secondary summaries. Check character: Luhn mod 36 over the first 14 characters. **No official publication of the algorithm was found.** It is kept as a checksum because it was tested against 17 published registrations of one public-sector company (Indian Oil Corporation, PAN `AAACI1681G`, across 13 states) and reproduced the check character of all 17; a wrong algorithm passes one such test with probability 1/36. The fourteenth character is Z for regular registrations; D and C occur in that company's tax-deductor and tax-collector registrations. |
 | `in_epic` | 3 letters then 7 digits | format | Election Commission of India, *Manual on Electoral Rolls*: three-letter FUSN code, six-digit serial, one check digit. Read through [quotation](https://thesouthfirst.com/politics/eci-contradicts-its-own-guidelines-on-epics-says-alphanumeric-codes-are-not-unique/). The check-digit algorithm is not published. Older cards in other layouts are not matched. |
 | `in_passport` | 1 letter then 7 digits | format | **No official specification found.** The shape is the one Presidio uses. Presidio also requires the second and last characters to be non-zero; with no source for that, it is not adopted. |
 | `in_mobile` | 10 digits, first digit 6-9; optional `+91`, `91` or `0` in front | format | Department of Telecommunications, *National Numbering Plan 2003*: ten-digit national numbers. The DoT host refused connections; [TRAI's 2025 release](https://trai.gov.in/sites/default/files/2025-02/PR_No.09of2025.pdf) (read) confirms the ten-digit mobile series continues. That the leading digit is 6-9 was not read in an official text. Mobile numbers have no check digit. |
 
-Before a scheme is tested, the value is normalized: leading and trailing
-whitespace removed, spaces and hyphens removed, letters upper-cased. So
-`"9999 4105 7058"` and `"abcpe1234f"` are judged as `999941057058` and
-`ABCPE1234F`.
+Before a scheme is tested, the value is normalized: ASCII whitespace and
+hyphens are removed wherever they occur and letters are upper-cased. So
+`"9999 4105 7058"` and `"aaapl1234c"` are judged as `999941057058` and
+`AAAPL1234C`. Other separators, non-breaking spaces and non-ASCII digits are
+not normalized, and such values are `FALSE`.
 
 Known false negatives, accepted: GSTINs that are not PAN-based (UN bodies,
 non-resident and online-service suppliers); pre-2017 style EPIC numbers;
@@ -157,6 +158,27 @@ id_verhoeff_digit(x)  # character: the check digit for payload x
 7. `R CMD check --as-cran`: 0 errors, 0 warnings. `lintr` clean under the
    canonical r-canon `.lintr`.
 8. **Speed.** A million values validated in well under a second.
+
+## Result, 2026-11-14
+
+Checked against the list above on macOS (Apple M4), R 4.6.0.
+
+- 215 expectations in 50 tests pass, none skipped. Changing one entry of the
+  Verhoeff permutation table, one entry of the Damm table, or the doubling
+  parity of the GSTIN check each makes the suite fail.
+- `R CMD check --as-cran`: 0 errors, 0 warnings, 2 notes. One is the
+  new-submission note, with 404s for the GitHub URLs because the repository
+  has not been created. The other is "No news entries found": R's NEWS parser
+  skips a `(development version)` heading, which r-canon requires between
+  releases, so the note lasts until the first release.
+- `lintr::lint_package()` with the canonical `.lintr` and the package
+  installed, as `reusable-lint.yml` runs it: no lints.
+- One million 12-character strings, half of them valid: `id_valid(x,
+  "in_aadhaar")` 66 ms, `id_verhoeff_valid(x)` 36 ms, `id_luhn_valid(x)` 36 ms
+  (medians of 20 runs). `CheckDigit::VerifyCheckDigit()` on the same vector:
+  14.3 s, identical answers.
+- Not checked: the four other r-canon platforms, which need the GitHub
+  repository; coverage; the pkgdown build in CI.
 
 ## Standards
 
