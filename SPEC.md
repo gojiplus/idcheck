@@ -1,0 +1,176 @@
+# idcheck: specification
+
+Status: draft 1, 2026-11-14. Written before the code; the first release is
+checked against it. It changes by pull request.
+
+## Problem
+
+A scanner for personal data (`piiscan`) sees a column of digit strings and has
+to decide whether they are identity numbers or arbitrary numbers. For many
+identity schemes that question has a sharp answer: the number carries a check
+digit, so nine in ten (or 35 in 36) arbitrary strings of the right shape fail.
+R has no package that answers "is this a valid X?" for a character vector of a
+million values, without erroring on junk, for the Indian schemes a social
+scientist meets first.
+
+`idcheck` answers that question. One function, `id_valid(x, scheme)`, returns a
+logical vector. The check-digit algorithms it rests on are exported on their
+own, because they are useful outside any one scheme.
+
+It validates the *form* of a number. It cannot say that a number was issued,
+or to whom.
+
+## Prior art
+
+Searched on 2026-11-14: `tools::CRAN_package_db()` (titles and descriptions
+matched against luhn, verhoeff, damm, check digit, checksum, ISO 7064, IBAN,
+national identity, Aadhaar, GSTIN, phone numbers), the source of each
+candidate, and the web.
+
+### On CRAN
+
+| Package | License | Last release | Covers | Why it is not enough here |
+|---|---|---|---|---|
+| `verhoeff` 0.4.0 | GPL-3 | 2021-01-26 | Verhoeff: compute, append, validate | One number per call (`prepare_number()` stops on length > 1). Input goes through `as.numeric()`, so leading zeros are lost and numbers beyond 15 digits are inexact. Stops on non-numeric input. |
+| `CheckDigit` 1.0.0 | GPL (>= 3) | 2022-04-24 | Verhoeff: append, verify; vectorized over character | Verhoeff only. Pure R. Non-digit characters are dropped with a warning rather than failing the value, and `NA` returns `FALSE`. |
+| `checkLuhn` 1.1.0 | GPL-2 | 2018-09-24 | Luhn | One number per call. Imports `dplyr` and `stringr` for a ten-line loop. |
+| `checkstring` 0.2.1 | MIT | 2026-09-28 | ISIN, CUSIP, SEDOL, FIGI, IBAN, LEI, ISBN, ISSN, ORCID, with check digits | Maintained, and the right home for those identifiers. Its mod 97 and mod 11 routines are internal, and it has no national identity numbers. |
+| `figir` 0.1.7.0 | MIT | 2023-08-19 | FIGI, CUSIP, ISIN, SEDOL | Financial instruments only. |
+| `nhsnumber` 0.1.2 | MIT | 2021-12-06 | UK NHS number (mod 11) | One scheme. |
+| `sweidnumbr` 1.5.0 | BSD-2 | 2024-01-13 | Swedish personal and organization numbers | One country. |
+| `afmpar` 0.2.0 | MIT | 2025-10-28 | Greek AFM and PA | One country. |
+| `rutifier` 1.0.4 | MIT | 2020-03-02 | Chilean RUT | One country. |
+| `numbers` 0.9-2 | GPL (>= 3) | 2025-11-20 | Number theory | No check-digit functions (source searched). |
+| `validate` 1.1.7 | GPL-3 | 2025-12-10 | Data validation rules | No check-digit functions (source searched). |
+
+There is no CRAN package named `luhn`, `damm`, `ISO7064` or `stdnum`, and none
+that mentions Aadhaar, PAN, GSTIN or EPIC.
+
+This corrects a statement in piiscan's SPEC.md, open question 2: Verhoeff *is*
+on CRAN, twice. Neither package is usable for scanning a column, for the
+reasons in the table, and both are GPL, so their code cannot be copied into an
+MIT package. `CheckDigit` could be imported by piiscan directly for Aadhaar
+alone; that would cover the checksum but not the other rules or schemes.
+
+### Elsewhere
+
+| Project | License | Used how |
+|---|---|---|
+| [Microsoft Presidio](https://github.com/microsoft/presidio), India recognizers | MIT | Read (2026-11-14) as a second statement of the rules. Aadhaar: 12 digits, first digit >= 2, Verhoeff, not a palindrome. PAN: regex with fourth character in `ABCFGHJLPT`. GSTIN: structure only, no checksum, state codes 01-37. Voter id: `[A-Z]{3}[0-9]{7}`. Passport: `[A-Z][1-9][0-9]{5}[1-9]`. No code taken; the Verhoeff tables are mathematical facts and are re-derived in the tests from the dihedral group. |
+| [python-stdnum](https://arthurdejong.org/python-stdnum/) | LGPL-2.1+ | Used only as a list of which Indian schemes exist (`in_.aadhaar`, `pan`, `gstin`, `epic`, `vid`). Its source was not read or copied. |
+
+### Decision
+
+Build: the Indian scheme rules (nothing on CRAN), and vectorized, NA-safe,
+non-erroring Luhn, Verhoeff, Damm and ISO 7064 routines in C++. Luhn and
+Verhoeff duplicate what `checkLuhn`, `verhoeff` and `CheckDigit` compute, but
+not how: those are scalar or lenient, slow, and GPL. `CheckDigit` and
+`checkLuhn` are used in the tests as independent oracles.
+
+Do not build: IBAN, LEI, ISIN, ISBN, ORCID and the like. `checkstring` has them.
+
+## Scope of the first release
+
+### Schemes
+
+`check` is `checksum` when a check digit is verified and `format` when only
+the shape is. "Read" means the source was opened and the rule seen in it on
+2026-11-14. Several Indian government sites refused connections that day; where
+the primary source could only be reached through quotation, that is said.
+
+| Scheme | Rule | Check | Source |
+|---|---|---|---|
+| `in_aadhaar` | 12 digits; first digit 2-9; Verhoeff check digit | checksum | UIDAI, *A UID Numbering Scheme* (May 2010): 12 digits, 11 plus a Verhoeff check digit; first digit 1 reserved for entities. Read only through quotation ([commentary](https://susam.net/uid-numbering-scheme.html), which links the [archived original](http://web.archive.org/web/20100704211109/www.uidai.gov.in/documents/A_UID_Numbering_Scheme.pdf)). That the first digit is never 0 was not found in a UIDAI text; it is stated by [Microsoft Purview](https://learn.microsoft.com/en-us/purview/sit-defn-india-unique-identification-number) (read) and Presidio (read). Verified against UIDAI's published [test UIDs](https://uidai.gov.in/en/916-developer-section/data-and-downloads-section/11350-testing-data-and-license-keys.html): all six pass. |
+| `in_pan` | 10 characters `AAAAA9999A`; fourth character one of A, B, C, F, G, H, J, L, P, T | format | Income Tax Department tutorial, [*Permanent Account Number*](https://incometaxindia.gov.in/tutorials/1.permanent%20account%20number%20(pan).pdf): fourth character is the holder's status. The site refused the download; the list was read from a search-engine summary of that PDF and agrees with Presidio. The tenth character is an alphabetic check digit whose algorithm is not published, so it is not verified. |
+| `in_gstin` | 15 characters: state code 01-38 or 97; a PAN (rule above); entity number 1-9 or A-Z; one of Z, C, D; check character | checksum | Structure: GST registration material, read only through secondary summaries. Check character: Luhn mod 36 over the first 14 characters. **No official publication of the algorithm was found.** It is kept as a checksum because it was tested against 17 published registrations of one public-sector company (Indian Oil Corporation, PAN `AAACI1681G`, across 13 states) and reproduced the check character of all 17; a wrong algorithm passes one such test with probability 1/36. The fourteenth character is Z for regular registrations; D and C occur in that company's tax-deductor and tax-collector registrations. |
+| `in_epic` | 3 letters then 7 digits | format | Election Commission of India, *Manual on Electoral Rolls*: three-letter FUSN code, six-digit serial, one check digit. Read through [quotation](https://thesouthfirst.com/politics/eci-contradicts-its-own-guidelines-on-epics-says-alphanumeric-codes-are-not-unique/). The check-digit algorithm is not published. Older cards in other layouts are not matched. |
+| `in_passport` | 1 letter then 7 digits | format | **No official specification found.** The shape is the one Presidio uses. Presidio also requires the second and last characters to be non-zero; with no source for that, it is not adopted. |
+| `in_mobile` | 10 digits, first digit 6-9; optional `+91`, `91` or `0` in front | format | Department of Telecommunications, *National Numbering Plan 2003*: ten-digit national numbers. The DoT host refused connections; [TRAI's 2025 release](https://trai.gov.in/sites/default/files/2025-02/PR_No.09of2025.pdf) (read) confirms the ten-digit mobile series continues. That the leading digit is 6-9 was not read in an official text. Mobile numbers have no check digit. |
+
+Before a scheme is tested, the value is normalized: leading and trailing
+whitespace removed, spaces and hyphens removed, letters upper-cased. So
+`"9999 4105 7058"` and `"abcpe1234f"` are judged as `999941057058` and
+`ABCPE1234F`.
+
+Known false negatives, accepted: GSTINs that are not PAN-based (UN bodies,
+non-resident and online-service suppliers); pre-2017 style EPIC numbers;
+Aadhaar virtual ids (16 digits).
+
+### Algorithms
+
+Exported for their own sake. Strict: the input is the string of characters
+itself, with no separators.
+
+| Functions | Algorithm | Source |
+|---|---|---|
+| `id_luhn_valid()`, `id_luhn_digit()` | Luhn, mod 10 | ISO/IEC 7812-1, Annex B; H. P. Luhn, US patent 2,950,048 (1960) |
+| `id_verhoeff_valid()`, `id_verhoeff_digit()` | Verhoeff | J. Verhoeff, *Error Detecting Decimal Codes*, Mathematical Centre Tract 29, Amsterdam, 1969 |
+| `id_damm_valid()`, `id_damm_digit()` | Damm | H. M. Damm, *Total anti-symmetrische Quasigruppen*, dissertation, Philipps-Universität Marburg, 2004 |
+| `id_mod11_2_valid()`, `id_mod11_2_digit()` | ISO 7064 MOD 11-2 | ISO/IEC 7064:2003 |
+| `id_mod97_10_valid()`, `id_mod97_10_digits()` | ISO 7064 MOD 97-10 | ISO/IEC 7064:2003; letters count as 10-35 as in ISO 13616 (IBAN) and ISO 17442 (LEI) |
+
+## API
+
+```r
+id_valid(x, scheme)   # logical, same length as x
+id_schemes()          # data frame: scheme, country, name, check, algorithm, source
+
+id_verhoeff_valid(x)  # logical
+id_verhoeff_digit(x)  # character: the check digit for payload x
+# and the same pair for luhn, damm, mod11_2; mod97_10 returns two digits
+```
+
+- Prefix `id_`. Data first. `snake_case`.
+- `x` is a character vector. Anything else is an error raised with `cli`: a
+  number stored as a double has already lost its leading zeros and may print
+  in scientific notation, so guessing would be wrong quietly.
+- `NA` in, `NA` out. A value that does not fit the scheme is `FALSE`, never an
+  error: empty strings, letters, non-ASCII bytes, strings of any length.
+- `*_digit()` returns `NA` for a payload the algorithm is not defined on.
+- No dependencies beyond `cli` and `rlang`. The loops are C++ through `cpp11`.
+
+## How we know it works
+
+1. **Published numbers.** Verhoeff: `236` gives 3, `12345` gives 1, `142857`
+   gives 0. Luhn: `7992739871` gives 3. Damm: `572` gives 4. MOD 11-2: the
+   ORCID documentation's sample identifiers. MOD 97-10: the worked example in
+   the standard (`794` gives `44`) and the ISO 17442 / ISO 13616 samples.
+   Aadhaar: UIDAI's test UIDs.
+2. **Properties that a wrong table breaks.** For Verhoeff and Damm, every
+   single-digit substitution and every adjacent transposition of a valid
+   number must fail. For Luhn, every substitution must fail, and every
+   transposition except 09/90.
+3. **A second implementation.** Each algorithm is written again in plain R
+   inside the tests, by a different route where one exists (Verhoeff's tables
+   are generated from the dihedral group and the base permutation rather than
+   typed; MOD 11-2 uses explicit weights rather than the recursive form; MOD
+   97-10 uses chunked remainders). C++ and R must agree on 10,000 random
+   inputs, valid and invalid.
+4. **A third opinion.** `CheckDigit` (Verhoeff) and `checkLuhn` (Luhn) must
+   agree on random digit strings, when installed.
+5. **Malformed input.** A fixed set of hostile values (empty, `NA`, 10,000
+   characters, non-ASCII, embedded signs) returns `FALSE`/`NA` without error.
+6. **No real identities.** Tests use published test numbers, the placeholders
+   that official documents print, or numbers constructed by computing a check
+   digit. The 17 company GSTINs used to confirm the mod 36 algorithm are
+   recorded here as evidence and are not in the test suite.
+7. `R CMD check --as-cran`: 0 errors, 0 warnings. `lintr` clean under the
+   canonical r-canon `.lintr`.
+8. **Speed.** A million values validated in well under a second.
+
+## Standards
+
+[r-canon](https://github.com/gojiplus/r-canon): its five workflows at `@v2`,
+the canonical `.lintr`, testthat edition 3, roxygen2 with markdown, `NEWS.md`,
+MIT license, pkgdown built in CI.
+
+## Out of scope
+
+- Whether a number was issued, is active, or belongs to a given person.
+- Finding identifiers inside running text. `piiscan` does the finding.
+- Parsing or formatting (splitting a GSTIN into state and PAN, pretty-printing).
+- Identifiers `checkstring` already validates.
+- Countries other than India, for now. Schemes are named `<country>_<scheme>`
+  so that others can be added without renaming.
+- Phone numbers in general. `in_mobile` is one national rule, not
+  libphonenumber.
