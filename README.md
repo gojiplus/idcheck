@@ -99,9 +99,9 @@ seconds on the same vector and returns the same answers.
 
 ## What it rests on
 
-[SPEC.md](https://github.com/gojiplus/idcheck/blob/main/SPEC.md) gives the
-source for every rule and says where one could not be confirmed. Two things to
-know before relying on a result:
+[Rules and their sources](https://gojiplus.github.io/idcheck/articles/rules.html)
+gives the source of every rule, the prior art, and how correctness is checked.
+Two things to know before relying on a result:
 
 - The GSTIN check character is computed by Luhn mod 36. No official document
   stating that was found; the algorithm was confirmed by reproducing the check

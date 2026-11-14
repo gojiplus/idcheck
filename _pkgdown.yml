@@ -13,3 +13,8 @@ reference:
   - id_damm_valid
   - id_mod11_2_valid
   - id_mod97_10_valid
+articles:
+- title: Background
+  navbar: Background
+  contents:
+  - articles/rules

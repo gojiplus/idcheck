@@ -13,7 +13,8 @@
 #' Before a value is tested, ASCII whitespace and hyphens are removed and
 #' letters are upper-cased, so `"9999 4105 7058"` is judged as `999941057058`.
 #'
-#' The rules, with the source for each, are in the package's `SPEC.md`:
+#' The rules, with the source for each, are in the article "Rules and their
+#' sources" at <https://gojiplus.github.io/idcheck/articles/rules.html>:
 #'
 #' * `in_aadhaar`: 12 digits, the first 2 to 9, the last a Verhoeff check
 #'   digit.

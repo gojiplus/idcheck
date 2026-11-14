@@ -30,7 +30,8 @@ was ever issued, or to whom.
 Before a value is tested, ASCII whitespace and hyphens are removed and
 letters are upper-cased, so \code{"9999 4105 7058"} is judged as \code{999941057058}.
 
-The rules, with the source for each, are in the package's \code{SPEC.md}:
+The rules, with the source for each, are in the article "Rules and their
+sources" at \url{https://gojiplus.github.io/idcheck/articles/rules.html}:
 \itemize{
 \item \code{in_aadhaar}: 12 digits, the first 2 to 9, the last a Verhoeff check
 digit.
