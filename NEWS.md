@@ -1,4 +1,4 @@
-# idcheck (development version)
+# idcheck 0.1.0
 
 * `id_valid()` tests whether strings are well-formed Indian identity numbers:
   Aadhaar (Verhoeff check digit), PAN, GSTIN (Luhn mod 36 check character),

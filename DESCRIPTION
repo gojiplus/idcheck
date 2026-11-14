@@ -1,6 +1,6 @@
 Package: idcheck
 Title: Validate Identity Numbers and Check Digits
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph"))
 Description: Tests whether strings are well-formed identity numbers, fast
@@ -20,6 +20,7 @@ Imports:
 Suggests: 
     CheckDigit,
     checkLuhn,
+    spelling,
     testthat (>= 3.0.0)
 LinkingTo: 
     cpp11
