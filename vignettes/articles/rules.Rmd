@@ -8,7 +8,7 @@ which by format only, where each rule comes from, and how the code is tested.
 
 ## Why this package
 
-A scanner for personal data (`piiscan`) sees a column of digit strings and has
+A scanner for personal data (`piinata`) sees a column of digit strings and has
 to decide whether they are identity numbers or arbitrary numbers. For many
 identity schemes that question has a sharp answer: the number carries a check
 digit, so nine in ten (or 35 in 36) arbitrary strings of the right shape fail.
@@ -49,10 +49,10 @@ candidate, and the web.
 There is no CRAN package named `luhn`, `damm`, `ISO7064` or `stdnum`, and none
 that mentions Aadhaar, PAN, GSTIN or EPIC.
 
-This corrects an early statement in piiscan's design notes: Verhoeff *is*
+This corrects an early statement in piinata's design notes: Verhoeff *is*
 on CRAN, twice. Neither package is usable for scanning a column, for the
 reasons in the table, and both are GPL, so their code cannot be copied into an
-MIT package. `CheckDigit` could be imported by piiscan directly for Aadhaar
+MIT package. `CheckDigit` could be imported by piinata directly for Aadhaar
 alone; that would cover the checksum but not the other rules or schemes.
 
 ### Elsewhere
@@ -166,7 +166,7 @@ Checked against the list above on macOS (Apple M4), R 4.6.0.
 ## Out of scope
 
 - Whether a number was issued, is active, or belongs to a given person.
-- Finding identifiers inside running text. `piiscan` does the finding.
+- Finding identifiers inside running text. `piinata` does the finding.
 - Parsing or formatting (splitting a GSTIN into state and PAN, pretty-printing).
 - Identifiers `checkstring` already validates.
 - Countries other than India, for now. Schemes are named `<country>_<scheme>`
