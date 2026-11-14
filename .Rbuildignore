@@ -1,0 +1,6 @@
+^LICENSE\.md$
+^SPEC\.md$
+^_pkgdown\.yml$
+^docs$
+^\.github$
+^\.lintr$

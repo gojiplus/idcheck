@@ -1,0 +1,15 @@
+url: https://gojiplus.github.io/idcheck/
+template:
+  bootstrap: 5
+reference:
+- title: Identity numbers
+  contents:
+  - id_valid
+  - id_schemes
+- title: Check-digit algorithms
+  contents:
+  - id_luhn_valid
+  - id_verhoeff_valid
+  - id_damm_valid
+  - id_mod11_2_valid
+  - id_mod97_10_valid
