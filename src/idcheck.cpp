@@ -1,5 +1,9 @@
 #include <cpp11.hpp>
 
+#include <cstring>
+
+#include "iban_lengths.h"
+
 namespace {
 
 // Cayley table of the dihedral group D5, the permutation applied by position,
@@ -174,7 +178,8 @@ int luhn36_digit(const char* s, int n) {
   return (36 - sum % 36) % 36;
 }
 
-const int kBufferSize = 32;
+// Long enough for the longest IBAN, 34 characters.
+const int kBufferSize = 40;
 
 // Copies s without ASCII whitespace and hyphens, upper-casing letters, so
 // "9999 4105 7058" and "abcpe1234f" are judged as written on the card.
@@ -244,6 +249,87 @@ bool in_mobile(const char* b, int m) {
   return b[0] >= '6' && b[0] <= '9' && all_digits(b, 10);
 }
 
+// Social Security Administration: no area 000, 666 or 900-999 (the 9xx
+// range is for ITINs), no group 00, no serial 0000. Following Microsoft
+// Presidio's recognizer, also not a single repeated digit or a published
+// placeholder (123-45-6789, 987-65-4320, 078-05-1120), which in data are
+// almost always dummies.
+bool us_ssn(const char* b, int m) {
+  if (m != 9 || !all_digits(b, 9)) return false;
+  int area = (b[0] - '0') * 100 + (b[1] - '0') * 10 + (b[2] - '0');
+  int group = (b[3] - '0') * 10 + (b[4] - '0');
+  bool serial = b[5] != '0' || b[6] != '0' || b[7] != '0' || b[8] != '0';
+  if (area == 0 || area == 666 || area >= 900 || group == 0 || !serial) return false;
+  bool repeated = true;
+  for (int i = 1; i < 9; ++i) repeated = repeated && b[i] == b[0];
+  return !repeated && std::strncmp(b, "123456789", 9) != 0 &&
+         std::strncmp(b, "987654320", 9) != 0 && std::strncmp(b, "078051120", 9) != 0;
+}
+
+// NHS Data Dictionary, NHS Number: ten digits, the last a modulus 11 check
+// digit over the first nine weighted 10 down to 2; a remainder giving 10 is
+// never issued.
+bool gb_nhs(const char* b, int m) {
+  if (m != 10 || !all_digits(b, 10)) return false;
+  int sum = 0;
+  for (int i = 0; i < 9; ++i) sum += (10 - i) * (b[i] - '0');
+  int check = 11 - sum % 11;
+  if (check == 11) check = 0;
+  return check != 10 && check == b[9] - '0';
+}
+
+// ISO 13616: two letters, two check digits, then the account; the length is
+// fixed by country (SWIFT's registry), and the number with its first four
+// characters moved to the end is 1 modulo 97 (ISO/IEC 7064 MOD 97-10).
+bool intl_iban(const char* b, int m) {
+  if (m < 5 || !is_upper(b[0]) || !is_upper(b[1]) || !is_digit(b[2]) || !is_digit(b[3])) {
+    return false;
+  }
+  int expected = 0;
+  for (const IbanLength& entry : kIbanLengths) {
+    if (entry.country[0] == b[0] && entry.country[1] == b[1]) expected = entry.length;
+  }
+  if (expected != m) return false;
+  char moved[kBufferSize];
+  std::memcpy(moved, b + 4, m - 4);
+  std::memcpy(moved + m - 4, b, 4);
+  return mod97_state(moved, m) == 1;
+}
+
+bool starts(const char* b, const char* prefix) {
+  return std::strncmp(b, prefix, std::strlen(prefix)) == 0;
+}
+
+int leading(const char* b, int digits) {
+  int v = 0;
+  for (int i = 0; i < digits; ++i) v = v * 10 + (b[i] - '0');
+  return v;
+}
+
+// ISO/IEC 7812: an issuer prefix and a length the issuer uses, then a Luhn
+// check digit. Luhn alone passes one random number in ten. Prefixes and
+// lengths for Visa, Mastercard, American Express, Discover, Diners Club,
+// JCB, UnionPay, RuPay and Maestro, from the issuer table of Wikipedia's
+// "Payment card number" (read 2026-11-14).
+bool intl_payment_card(const char* b, int m) {
+  if (m < 12 || m > 19 || !all_digits(b, m)) return false;
+  int two = leading(b, 2), four = leading(b, 4);
+  bool issued =
+      (b[0] == '4' && (m == 13 || m == 16 || m == 19)) ||
+      (((two >= 51 && two <= 55) || (four >= 2221 && four <= 2720)) && m == 16) ||
+      ((two == 34 || two == 37) && m == 15) ||
+      ((starts(b, "6011") || two == 65 || (leading(b, 3) >= 644 && leading(b, 3) <= 649)) &&
+       m >= 16) ||
+      ((two == 30 || two == 36 || two == 38 || two == 39) && m >= 14) ||
+      ((four >= 3528 && four <= 3589) && m >= 16) ||
+      (two == 62 && m >= 16) ||
+      ((two == 60 || two == 81 || two == 82 || starts(b, "508")) && m == 16) ||
+      ((four == 5018 || four == 5020 || four == 5038 || four == 5893 || four == 6304 ||
+        four == 6759 || (four >= 6761 && four <= 6763)) &&
+       m >= 12);
+  return issued && luhn_valid(b, m);
+}
+
 typedef bool (*valid_fn)(const char*, R_xlen_t);
 typedef int (*digit_fn)(const char*, R_xlen_t);
 typedef bool (*scheme_fn)(const char*, int);
@@ -253,8 +339,9 @@ const valid_fn kValid[] = {luhn_valid, verhoeff_valid, damm_valid,
                            mod11_2_valid, mod97_10_valid};
 const digit_fn kDigit[] = {luhn_digit, verhoeff_digit, damm_digit,
                            mod11_2_digit, mod97_10_digits};
-const scheme_fn kScheme[] = {in_aadhaar, in_pan,      in_gstin,
-                             in_epic,    in_passport, in_mobile};
+const scheme_fn kScheme[] = {in_aadhaar, in_pan,    in_gstin,  in_epic,
+                             in_passport, in_mobile, us_ssn,    gb_nhs,
+                             intl_iban,   intl_payment_card};
 
 template <typename T, int N>
 T pick(T const (&table)[N], int code) {

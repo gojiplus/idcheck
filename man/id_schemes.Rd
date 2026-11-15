@@ -9,8 +9,9 @@ id_schemes()
 \value{
 A data frame with one row per scheme and the columns
 \itemize{
-\item \code{scheme}: the name to pass to \code{\link[=id_valid]{id_valid()}}, \verb{<country>_<scheme>}.
-\item \code{country}: ISO 3166-1 alpha-2 code.
+\item \code{scheme}: the name to pass to \code{\link[=id_valid]{id_valid()}}, \verb{<country>_<scheme>}, or
+\verb{intl_<scheme>} for schemes used across countries.
+\item \code{country}: ISO 3166-1 alpha-2 code, or \code{NA} for \code{intl_} schemes.
 \item \code{name}: what the number is called.
 \item \code{check}: \code{"checksum"} if a check digit is verified, \code{"format"} if only
 the shape is.
