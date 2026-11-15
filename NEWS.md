@@ -1,3 +1,11 @@
+# idcheck (development version)
+
+* New schemes beyond India: `us_ssn` (US Social Security number, by the SSA's
+  rules and without placeholders), `gb_nhs` (UK NHS number, modulus 11) and
+  `intl_payment_card` (issuer prefix, length and Luhn). Schemes used across
+  countries are named `intl_` and have no `country`. IBANs are left to
+  'checkstring', as the rules article decided.
+
 # idcheck 0.1.0
 
 * `id_valid()` tests whether strings are well-formed Indian identity numbers:

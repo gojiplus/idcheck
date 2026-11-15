@@ -44,6 +44,13 @@ entity number, one of \code{Z}, \code{C}, \code{D}, and a Luhn mod 36 check char
 \item \code{in_passport}: one letter and seven digits.
 \item \code{in_mobile}: ten digits, the first 6 to 9, optionally after \code{+91}, \code{91}
 or \code{0}.
+\item \code{us_ssn}: nine digits; no area \code{000}, \code{666} or \code{900}-\code{999}, no group
+\code{00}, no serial \code{0000}, and not a repeated digit or a published
+placeholder (\code{123-45-6789}, \code{987-65-4320}, \code{078-05-1120}).
+\item \code{gb_nhs}: ten digits, the last a modulus 11 check digit.
+\item \code{intl_payment_card}: a payment card number with a known issuer prefix
+and length (Visa, Mastercard, American Express, Discover, Diners Club,
+JCB, UnionPay, RuPay, Maestro) and a Luhn check digit.
 }
 }
 \examples{

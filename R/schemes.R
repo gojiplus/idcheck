@@ -27,6 +27,13 @@
 #' * `in_passport`: one letter and seven digits.
 #' * `in_mobile`: ten digits, the first 6 to 9, optionally after `+91`, `91`
 #'   or `0`.
+#' * `us_ssn`: nine digits; no area `000`, `666` or `900`-`999`, no group
+#'   `00`, no serial `0000`, and not a repeated digit or a published
+#'   placeholder (`123-45-6789`, `987-65-4320`, `078-05-1120`).
+#' * `gb_nhs`: ten digits, the last a modulus 11 check digit.
+#' * `intl_payment_card`: a payment card number with a known issuer prefix
+#'   and length (Visa, Mastercard, American Express, Discover, Diners Club,
+#'   JCB, UnionPay, RuPay, Maestro) and a Luhn check digit.
 #'
 #' @param x A character vector.
 #' @param scheme A single string naming the scheme, one of
@@ -60,8 +67,9 @@ id_valid <- function(x, scheme) {
 #' List the identity-number schemes
 #'
 #' @returns A data frame with one row per scheme and the columns
-#'   * `scheme`: the name to pass to [id_valid()], `<country>_<scheme>`.
-#'   * `country`: ISO 3166-1 alpha-2 code.
+#'   * `scheme`: the name to pass to [id_valid()], `<country>_<scheme>`, or
+#'     `intl_<scheme>` for schemes used across countries.
+#'   * `country`: ISO 3166-1 alpha-2 code, or `NA` for `intl_` schemes.
 #'   * `name`: what the number is called.
 #'   * `check`: `"checksum"` if a check digit is verified, `"format"` if only
 #'     the shape is.
@@ -73,24 +81,33 @@ id_valid <- function(x, scheme) {
 id_schemes <- function() {
   data.frame(
     scheme = scheme_names,
-    country = "IN",
+    country = c(rep("IN", 6), "US", "GB", NA),
     name = c(
       "Aadhaar number",
       "Permanent Account Number (PAN)",
       "Goods and Services Tax Identification Number (GSTIN)",
       "Elector's Photo Identity Card (EPIC) number",
       "Passport number",
-      "Mobile phone number"
+      "Mobile phone number",
+      "Social Security number",
+      "NHS number",
+      "Payment card number"
     ),
-    check = c("checksum", "format", "checksum", "format", "format", "format"),
-    algorithm = c("Verhoeff", NA, "Luhn mod 36", NA, NA, NA),
+    check = c(
+      "checksum", "format", "checksum", "format", "format", "format",
+      "format", "checksum", "checksum"
+    ),
+    algorithm = c("Verhoeff", NA, "Luhn mod 36", NA, NA, NA, NA, "mod 11", "Luhn"),
     source = c(
       "UIDAI, A UID Numbering Scheme (2010)",
       "Income Tax Department, Permanent Account Number tutorial",
       "GST registration structure; check character confirmed against published registrations",
       "Election Commission of India, Manual on Electoral Rolls",
       "No official specification found; format as used by Microsoft Presidio",
-      "Department of Telecommunications, National Numbering Plan 2003"
+      "Department of Telecommunications, National Numbering Plan 2003",
+      "Social Security Administration rules; placeholders as excluded by Microsoft Presidio",
+      "NHS Data Dictionary, NHS Number",
+      "ISO/IEC 7812; issuer prefixes from Wikipedia's Payment card number table"
     )
   )
 }

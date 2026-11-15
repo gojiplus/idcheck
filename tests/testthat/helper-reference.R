@@ -211,11 +211,38 @@ ref_scheme_valid <- function(x, scheme) {
     },
     in_epic = grepl("^[A-Z]{3}[0-9]{7}$", s),
     in_passport = grepl("^[A-Z][0-9]{7}$", s),
-    in_mobile = grepl("^(\\+91|91|0)?[6-9][0-9]{9}$", s)
+    in_mobile = grepl("^(\\+91|91|0)?[6-9][0-9]{9}$", s),
+    us_ssn = grepl("^[0-9]{9}$", s) & !grepl("^(000|666|9)", s) &
+      substr(s, 4, 5) != "00" & substr(s, 6, 9) != "0000" & !grepl("^(.)\\1{8}$", s) &
+      !s %in% c("123456789", "987654320", "078051120"),
+    gb_nhs = grepl("^[0-9]{10}$", s) & vapply(s, ref_nhs_valid, logical(1)),
+    intl_payment_card = grepl(ref_card_pattern, s) & vapply(s, ref_luhn_valid, logical(1))
   )
   out[is.na(x)] <- NA
   unname(out)
 }
+
+ref_nhs_valid <- function(s) {
+  if (!grepl("^[0-9]{10}$", s)) {
+    return(FALSE)
+  }
+  d <- digits_of(s)
+  check <- 11 - sum(d[1:9] * 10:2) %% 11
+  check <- if (check == 11) 0 else check
+  check != 10 && check == d[10]
+}
+
+ref_card_pattern <- paste0(
+  "^(4([0-9]{12}|[0-9]{15}|[0-9]{18})",
+  "|(5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}",
+  "|3[47][0-9]{13}",
+  "|(6011|65[0-9]{2}|64[4-9][0-9])[0-9]{12,15}",
+  "|3[0689][0-9]{12,17}",
+  "|(352[89]|35[3-8][0-9])[0-9]{12,15}",
+  "|62[0-9]{14,17}",
+  "|(60|81|82)[0-9]{14}|508[0-9]{13}",
+  "|(5018|5020|5038|5893|6304|6759|676[1-3])[0-9]{8,15})$"
+)
 
 # `n` strings over `alphabet`, each of a length drawn from `lengths`.
 random_string <- function(n, lengths, alphabet) {

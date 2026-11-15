@@ -1,15 +1,15 @@
 Package: idcheck
 Title: Validate Identity Numbers and Check Digits
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: 
     person("Gaurav", "Sood", , "gsood07@gmail.com", role = c("aut", "cre", "cph"))
 Description: Tests whether strings are well-formed identity numbers, fast
-    and vectorized over character vectors. The first release covers India:
-    Aadhaar, Permanent Account Number, Goods and Services Tax
-    Identification Number, voter identity card number, passport number and
-    mobile number. The check-digit algorithms are exported on their own:
-    Luhn, Verhoeff, Damm, and 'ISO/IEC 7064' MOD 11-2 and MOD 97-10.
-    Malformed input returns FALSE rather than an error.
+    and vectorized over character vectors: Indian Aadhaar, Permanent
+    Account Number, Goods and Services Tax Identification Number, voter
+    identity card, passport and mobile numbers; US Social Security
+    numbers; UK National Health Service numbers; and payment card numbers. The check-digit algorithms are
+    exported on their own: Luhn, Verhoeff, Damm, and 'ISO/IEC 7064' MOD 11-2
+    and MOD 97-10. Malformed input returns FALSE rather than an error.
 License: MIT + file LICENSE
 URL: https://gojiplus.github.io/idcheck/,
     https://github.com/gojiplus/idcheck
