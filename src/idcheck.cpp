@@ -2,8 +2,6 @@
 
 #include <cstring>
 
-#include "iban_lengths.h"
-
 namespace {
 
 // Cayley table of the dihedral group D5, the permutation applied by position,
@@ -178,8 +176,7 @@ int luhn36_digit(const char* s, int n) {
   return (36 - sum % 36) % 36;
 }
 
-// Long enough for the longest IBAN, 34 characters.
-const int kBufferSize = 40;
+const int kBufferSize = 32;
 
 // Copies s without ASCII whitespace and hyphens, upper-casing letters, so
 // "9999 4105 7058" and "abcpe1234f" are judged as written on the card.
@@ -278,24 +275,6 @@ bool gb_nhs(const char* b, int m) {
   return check != 10 && check == b[9] - '0';
 }
 
-// ISO 13616: two letters, two check digits, then the account; the length is
-// fixed by country (SWIFT's registry), and the number with its first four
-// characters moved to the end is 1 modulo 97 (ISO/IEC 7064 MOD 97-10).
-bool intl_iban(const char* b, int m) {
-  if (m < 5 || !is_upper(b[0]) || !is_upper(b[1]) || !is_digit(b[2]) || !is_digit(b[3])) {
-    return false;
-  }
-  int expected = 0;
-  for (const IbanLength& entry : kIbanLengths) {
-    if (entry.country[0] == b[0] && entry.country[1] == b[1]) expected = entry.length;
-  }
-  if (expected != m) return false;
-  char moved[kBufferSize];
-  std::memcpy(moved, b + 4, m - 4);
-  std::memcpy(moved + m - 4, b, 4);
-  return mod97_state(moved, m) == 1;
-}
-
 bool starts(const char* b, const char* prefix) {
   return std::strncmp(b, prefix, std::strlen(prefix)) == 0;
 }
@@ -307,7 +286,8 @@ int leading(const char* b, int digits) {
 }
 
 // ISO/IEC 7812: an issuer prefix and a length the issuer uses, then a Luhn
-// check digit. Luhn alone passes one random number in ten. Prefixes and
+// check digit. Luhn alone passes one random number in ten, these rules about
+// three in a hundred. Prefixes and
 // lengths for Visa, Mastercard, American Express, Discover, Diners Club,
 // JCB, UnionPay, RuPay and Maestro, from the issuer table of Wikipedia's
 // "Payment card number" (read 2026-11-14).
@@ -339,9 +319,9 @@ const valid_fn kValid[] = {luhn_valid, verhoeff_valid, damm_valid,
                            mod11_2_valid, mod97_10_valid};
 const digit_fn kDigit[] = {luhn_digit, verhoeff_digit, damm_digit,
                            mod11_2_digit, mod97_10_digits};
-const scheme_fn kScheme[] = {in_aadhaar, in_pan,    in_gstin,  in_epic,
-                             in_passport, in_mobile, us_ssn,    gb_nhs,
-                             intl_iban,   intl_payment_card};
+const scheme_fn kScheme[] = {in_aadhaar,  in_pan,    in_gstin, in_epic,
+                             in_passport, in_mobile, us_ssn,   gb_nhs,
+                             intl_payment_card};
 
 template <typename T, int N>
 T pick(T const (&table)[N], int code) {

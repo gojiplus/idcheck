@@ -48,9 +48,6 @@ or \code{0}.
 \code{00}, no serial \code{0000}, and not a repeated digit or a published
 placeholder (\code{123-45-6789}, \code{987-65-4320}, \code{078-05-1120}).
 \item \code{gb_nhs}: ten digits, the last a modulus 11 check digit.
-\item \code{intl_iban}: an International Bank Account Number: country code, check
-digits and account, of the length SWIFT's registry fixes for the country,
-verified by ISO/IEC 7064 MOD 97-10.
 \item \code{intl_payment_card}: a payment card number with a known issuer prefix
 and length (Visa, Mastercard, American Express, Discover, Diners Club,
 JCB, UnionPay, RuPay, Maestro) and a Luhn check digit.

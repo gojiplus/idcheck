@@ -1,4 +1,4 @@
 [codespell]
 builtin = clear,rare,en-GB_to_en-US
 skip = ./docs,./man,./src/cpp11.cpp
-ignore-words-list = centre,fo
+ignore-words-list = centre

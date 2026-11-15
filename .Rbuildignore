@@ -8,4 +8,3 @@
 ^docs$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
-^data-raw$

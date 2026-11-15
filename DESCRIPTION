@@ -7,8 +7,7 @@ Description: Tests whether strings are well-formed identity numbers, fast
     and vectorized over character vectors: Indian Aadhaar, Permanent
     Account Number, Goods and Services Tax Identification Number, voter
     identity card, passport and mobile numbers; US Social Security
-    numbers; UK National Health Service numbers; International Bank Account
-    Numbers; and payment card numbers. The check-digit algorithms are
+    numbers; UK National Health Service numbers; and payment card numbers. The check-digit algorithms are
     exported on their own: Luhn, Verhoeff, Damm, and 'ISO/IEC 7064' MOD 11-2
     and MOD 97-10. Malformed input returns FALSE rather than an error.
 License: MIT + file LICENSE

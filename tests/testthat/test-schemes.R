@@ -22,7 +22,6 @@ test_that("each scheme name reaches its own rule", {
     in_mobile = "6123456789",
     us_ssn = "536-90-4399",
     gb_nhs = "401 023 2137",
-    intl_iban = "GB82 WEST 1234 5698 7654 32",
     intl_payment_card = "4111 1111 1111 1111"
   )
   expect_setequal(names(examples), id_schemes()$scheme)

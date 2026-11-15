@@ -3,7 +3,7 @@
 algorithm_names <- c("luhn", "verhoeff", "damm", "mod11_2", "mod97_10")
 scheme_names <- c(
   "in_aadhaar", "in_pan", "in_gstin", "in_epic", "in_passport", "in_mobile",
-  "us_ssn", "gb_nhs", "intl_iban", "intl_payment_card"
+  "us_ssn", "gb_nhs", "intl_payment_card"
 )
 
 algorithm_code <- function(name) {

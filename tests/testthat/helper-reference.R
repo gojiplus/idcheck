@@ -216,7 +216,6 @@ ref_scheme_valid <- function(x, scheme) {
       substr(s, 4, 5) != "00" & substr(s, 6, 9) != "0000" & !grepl("^(.)\\1{8}$", s) &
       !s %in% c("123456789", "987654320", "078051120"),
     gb_nhs = grepl("^[0-9]{10}$", s) & vapply(s, ref_nhs_valid, logical(1)),
-    intl_iban = vapply(s, ref_iban_valid, logical(1)),
     intl_payment_card = grepl(ref_card_pattern, s) & vapply(s, ref_luhn_valid, logical(1))
   )
   out[is.na(x)] <- NA
@@ -231,23 +230,6 @@ ref_nhs_valid <- function(s) {
   check <- 11 - sum(d[1:9] * 10:2) %% 11
   check <- if (check == 11) 0 else check
   check != 10 && check == d[10]
-}
-
-# The registry data the C++ compiles, written beside it by
-# data-raw/iban_lengths.py; the arithmetic below is independent of the C++.
-ref_iban_lengths <- function() {
-  table <- utils::read.csv(testthat::test_path("iban_lengths.csv"))
-  stats::setNames(table$length, table$country)
-}
-
-ref_iban_valid <- function(s) {
-  lengths <- ref_iban_lengths()
-  country <- substr(s, 1, 2)
-  shaped <- grepl("^[A-Z]{2}[0-9]{2}[A-Z0-9]+$", s) && country %in% names(lengths)
-  if (!shaped || nchar(s) != lengths[[country]]) {
-    return(FALSE)
-  }
-  ref_mod97_10_valid(paste0(substr(s, 5, nchar(s)), substr(s, 1, 4)))
 }
 
 ref_card_pattern <- paste0(

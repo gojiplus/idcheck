@@ -31,9 +31,6 @@
 #'   `00`, no serial `0000`, and not a repeated digit or a published
 #'   placeholder (`123-45-6789`, `987-65-4320`, `078-05-1120`).
 #' * `gb_nhs`: ten digits, the last a modulus 11 check digit.
-#' * `intl_iban`: an International Bank Account Number: country code, check
-#'   digits and account, of the length SWIFT's registry fixes for the country,
-#'   verified by ISO/IEC 7064 MOD 97-10.
 #' * `intl_payment_card`: a payment card number with a known issuer prefix
 #'   and length (Visa, Mastercard, American Express, Discover, Diners Club,
 #'   JCB, UnionPay, RuPay, Maestro) and a Luhn check digit.
@@ -84,7 +81,7 @@ id_valid <- function(x, scheme) {
 id_schemes <- function() {
   data.frame(
     scheme = scheme_names,
-    country = c(rep("IN", 6), "US", "GB", NA, NA),
+    country = c(rep("IN", 6), "US", "GB", NA),
     name = c(
       "Aadhaar number",
       "Permanent Account Number (PAN)",
@@ -94,14 +91,13 @@ id_schemes <- function() {
       "Mobile phone number",
       "Social Security number",
       "NHS number",
-      "International Bank Account Number (IBAN)",
       "Payment card number"
     ),
     check = c(
       "checksum", "format", "checksum", "format", "format", "format",
-      "format", "checksum", "checksum", "checksum"
+      "format", "checksum", "checksum"
     ),
-    algorithm = c("Verhoeff", NA, "Luhn mod 36", NA, NA, NA, NA, "mod 11", "MOD 97-10", "Luhn"),
+    algorithm = c("Verhoeff", NA, "Luhn mod 36", NA, NA, NA, NA, "mod 11", "Luhn"),
     source = c(
       "UIDAI, A UID Numbering Scheme (2010)",
       "Income Tax Department, Permanent Account Number tutorial",
@@ -111,7 +107,6 @@ id_schemes <- function() {
       "Department of Telecommunications, National Numbering Plan 2003",
       "Social Security Administration rules; placeholders as excluded by Microsoft Presidio",
       "NHS Data Dictionary, NHS Number",
-      "ISO 13616; lengths from SWIFT's IBAN registry as packaged by schwifty",
       "ISO/IEC 7812; issuer prefixes from Wikipedia's Payment card number table"
     )
   )
